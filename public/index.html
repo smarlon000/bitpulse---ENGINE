@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BitPulse Engine</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      color: #1f2937;
+      background: linear-gradient(90deg, #1F2937, #256EB3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    header span {
+      font-size: 0.75rem;
+      color: #6b7280;
+      border: 1px solid #374151;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 28px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #58a6ff;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .card p.desc {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: #8b949e;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #c9d1d9;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: #58a6ff;
+    }
+
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #1f6feb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #388bfd; }
+
+    .result {
+      margin-top: 20px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      min-height: 60px;
+      color: #7ee787;
+      display: none;
+    }
+
+    .result.error { color: #f85149; }
+    .result.visible { display: block; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .tag-post { background: #1a3a1a; color: #3fb950; border: 1px solid #3fb950; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ BITPULSE ENGINE</h1>
+  <span>Low-Level Logic Simulation</span>
+</header>
+
+<div class="container">
+
+  <!-- PORTA LÓGICA -->
+  <div class="card">
+    <h2>Simulador de Porta Lógica <span class="tag tag-post">POST /gate</span></h2>
+    <p class="desc">Selecione uma porta lógica e informe as entradas para calcular a saída em tempo real.</p>
+
+    <label for="gate">Porta Lógica</label>
+    <select id="gate">
+      <option value="AND">AND</option>
+      <option value="OR">OR</option>
+      <option value="NOT">NOT</option>
+      <option value="XOR">XOR</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="inputA">Entrada A</label>
+        <select id="inputA">
+          <option value="0">0</option>
+          <option value="1">1</option>
+        </select>
+      </div>
+      <div id="inputBWrapper">
+        <label for="inputB">Entrada B</label>
+        <select id="inputB">
+          <option value="0">0</option>
+          <option value="1">1</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="btnGate">Simular Porta</button>
+    <div class="result" id="resultGate"></div>
+  </div>
+
+  <!-- IEEE 754 -->
+  <div class="card">
+    <h2>Conversor IEEE 754 <span class="tag tag-post">POST /ieee754</span></h2>
+    <p class="desc">Informe um número decimal para obter sua representação em ponto flutuante IEEE 754 de 32 bits.</p>
+
+    <label for="valor">Valor Decimal</label>
+    <input type="number" id="valor" placeholder="Ex: 0.5, -3.14, 42" step="any" />
+
+    <button id="btnIeee">Converter para IEEE 754</button>
+    <div class="result" id="resultIeee"></div>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+
+  // Ocultar entrada B quando NOT selecionado
+  document.getElementById('gate').addEventListener('change', function () {
+    const wrapper = document.getElementById('inputBWrapper');
+    wrapper.style.display = this.value === 'NOT' ? 'none' : 'block';
+  });
+
+  // Simular porta lógica
+  document.getElementById('btnGate').addEventListener('click', async () => {
+    const gate = document.getElementById('gate').value;
+    const a = parseInt(document.getElementById('inputA').value);
+    const b = parseInt(document.getElementById('inputB').value);
+
+    const body = gate === 'NOT' ? { gate, a } : { gate, a, b };
+    const el = document.getElementById('resultGate');
+
+    try {
+      const res = await fetch(`${API}/gate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      el.className = 'result visible' + (res.ok ? '' : ' error');
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      el.className = 'result visible error';
+      el.textContent = 'Erro: não foi possível conectar à API.';
+    }
+  });
+
+  // Converter IEEE 754
+  document.getElementById('btnIeee').addEventListener('click', async () => {
+    const valorStr = document.getElementById('valor').value;
+    const el = document.getElementById('resultIeee');
+
+    if (valorStr === '') {
+      el.className = 'result visible error';
+      el.textContent = 'Informe um valor numérico.';
+      return;
+    }
+
+    const valor = parseFloat(valorStr);
+
+    try {
+      const res = await fetch(`${API}/ieee754`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ valor })
+      });
+      const data = await res.json();
+      el.className = 'result visible' + (res.ok ? '' : ' error');
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+      el.className = 'result visible error';
+      el.textContent = 'Erro: não foi possível conectar à API.';
+    }
+  });
+</script>
+
+</body>
+</html>
